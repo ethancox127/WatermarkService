@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"context"
 	"testing"
+
 	"github.com/jmoiron/sqlx"
 
-	"github.com/ethancox127/WatermarkService/internal/db_utils"
 	"github.com/ethancox127/WatermarkService/internal"
+	"github.com/ethancox127/WatermarkService/internal/db_utils"
 	"github.com/ethancox127/WatermarkService/pkg/database"
 	"github.com/stretchr/testify/require"
 )
@@ -19,10 +20,10 @@ var ctx context.Context
 
 func TestDBConnection(t *testing.T) {
 	db, err = db_utils.ConnectDB()
-    if err != nil {
-        log.Fatalln(err)
-    }
-  
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	ctx = context.TODO()
 }
 
@@ -48,5 +49,13 @@ func TestGet(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	dbService := database.NewService()
-	
+	doc := internal.Document{Id: -1, Title: "Test", Content: "Test", Author: "False", Topic: "Test", Watermark: "test"}
+	err := dbService.Update(ctx, db, "Test", &doc)
+	require.Equal(t, err, nil, "Error truncating Event Log")
+}
+
+func TestDelete(t *testing.T) {
+	dbService := database.NewService()
+	err := dbService.Remove(ctx, db, "Test")
+	require.Equal(t, err, nil, "Error truncating Event Log")
 }
