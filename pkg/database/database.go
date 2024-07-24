@@ -12,11 +12,17 @@ import (
 	"github.com/ethancox127/WatermarkService/internal"
 )
 
-type databaseService struct{}
+type databaseService struct{
+	ctx context.Context
+	db *sqlx.DB
+}
 
-func NewService() Service { return &databaseService{} }
+func NewService(ctx context.Context, db *sqlx.DB) Service { 
+	return &databaseService{ctx: ctx, db: db}
+}
 
 func testConnection(db *sqlx.DB) error {
+	fmt.Println("Testing db connection")
 	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 		return err
@@ -65,16 +71,18 @@ func receiveDocs(rows *sqlx.Rows) ([]internal.Document, error) {
 	return docs, nil
 }
 
-func (d *databaseService) Get(_ context.Context, db *sqlx.DB, filters ...internal.Filter) ([]internal.Document, error) {
+func (d *databaseService) Get(filters ...internal.Filter) ([]internal.Document, error) {
+	fmt.Println("Getting records")
+	log.Println("Getting records")
 
-	err := testConnection(db)
+	err := testConnection(d.db)
 	if err != nil {
 		return nil, err
 	}
 
 	query := buildQuery(filters...)
 
-	rows, err := db.Queryx(query)
+	rows, err := d.db.Queryx(query)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -88,13 +96,13 @@ func (d *databaseService) Get(_ context.Context, db *sqlx.DB, filters ...interna
 	return docs, nil
 }
 
-func (d *databaseService) Update(_ context.Context, db *sqlx.DB, title string, doc *internal.Document) error {
-	err := testConnection(db)
+func (d *databaseService) Update(title string, doc *internal.Document) error {
+	err := testConnection(d.db)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Queryx("UPDATE books SET content = " + `'` + doc.Content + `'` + ", author = " + `'` + doc.Author + `'` + ", topic = " + `'` + doc.Topic + `'` + ", watermark = true WHERE title = " + `'` + doc.Title + `'`)
+	_, err = d.db.Queryx("UPDATE books SET content = " + `'` + doc.Content + `'` + ", author = " + `'` + doc.Author + `'` + ", topic = " + `'` + doc.Topic + `'` + ", watermark = true WHERE title = " + `'` + doc.Title + `'`)
 	if err != nil {
 		return err
 	}
@@ -102,13 +110,13 @@ func (d *databaseService) Update(_ context.Context, db *sqlx.DB, title string, d
 	return nil
 }
 
-func (d *databaseService) Add(_ context.Context, db *sqlx.DB, doc *internal.Document) (string, error) {
-	err := testConnection(db)
+func (d *databaseService) Add(doc *internal.Document) (string, error) {
+	err := testConnection(d.db)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = db.Queryx("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
+	_, err = d.db.Queryx("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
 	if err != nil {
 		return "", err
 	}
@@ -116,14 +124,14 @@ func (d *databaseService) Add(_ context.Context, db *sqlx.DB, doc *internal.Docu
 	return "Success", nil
 }
 
-func (d *databaseService) Remove(_ context.Context, db *sqlx.DB, title string) error {
-	err := testConnection(db)
+func (d *databaseService) Remove(title string) error {
+	err := testConnection(d.db)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("DELETE FROM books WHERE title = " + `'` + title + `'`)
-	_, err = db.Queryx("DELETE FROM books WHERE title = " + `'` + title + `'`)
+	_, err = d.db.Queryx("DELETE FROM books WHERE title = " + `'` + title + `'`)
 	if err != nil {
 		return err
 	}
@@ -131,7 +139,7 @@ func (d *databaseService) Remove(_ context.Context, db *sqlx.DB, title string) e
 	return nil
 }
 
-func (d *databaseService) ServiceStatus(ctx context.Context) (int, error) {
+func (d *databaseService) ServiceStatus() (int, error) {
 	log.Println("Checking the Service health...")
 	return http.StatusOK, nil
 }
