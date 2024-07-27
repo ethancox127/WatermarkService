@@ -3,6 +3,7 @@ package db_endpoints
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ethancox127/WatermarkService/internal"
@@ -14,8 +15,8 @@ import (
 
 type Set struct {
 	GetEndpoint           endpoint.Endpoint
-	UpdateEndpoint		  endpoint.Endpoint
-	AddEndpoint   		  endpoint.Endpoint
+	UpdateEndpoint        endpoint.Endpoint
+	AddEndpoint           endpoint.Endpoint
 	RemoveEndpoint        endpoint.Endpoint
 	ServiceStatusEndpoint endpoint.Endpoint
 }
@@ -23,15 +24,16 @@ type Set struct {
 func NewEndpointSet(svc database.Service) Set {
 	return Set{
 		GetEndpoint:           MakeGetEndpoint(svc),
-		UpdateEndpoint:   	   MakeUpdateEndpoint(svc),
+		UpdateEndpoint:        MakeUpdateEndpoint(svc),
 		AddEndpoint:           MakeAddEndpoint(svc),
-		RemoveEndpoint:		   MakeRemoveEndpoint(svc),
+		RemoveEndpoint:        MakeRemoveEndpoint(svc),
 		ServiceStatusEndpoint: MakeServiceStatusEndpoint(svc),
 	}
 }
 
 func MakeGetEndpoint(svc database.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		fmt.Println("Make Get Endpoint")
 		req := request.(GetRequest)
 		docs, err := svc.Get(req.Filters...)
 		if err != nil {
@@ -86,6 +88,7 @@ func MakeServiceStatusEndpoint(svc database.Service) endpoint.Endpoint {
 }
 
 func (s *Set) Get(ctx context.Context, filters ...internal.Filter) ([]internal.Document, error) {
+	fmt.Println("Set Get request")
 	resp, err := s.GetEndpoint(ctx, GetRequest{Filters: filters})
 	if err != nil {
 		return []internal.Document{}, err
@@ -97,7 +100,7 @@ func (s *Set) Get(ctx context.Context, filters ...internal.Filter) ([]internal.D
 	return getResp.Documents, nil
 }
 
-func (s *Set) Update(ctx context.Context, title string, doc *internal.Document) (error) {
+func (s *Set) Update(ctx context.Context, title string, doc *internal.Document) error {
 	resp, err := s.UpdateEndpoint(ctx, UpdateRequest{Title: title, Document: doc})
 	if err != nil {
 		return err
@@ -121,7 +124,7 @@ func (s *Set) Add(ctx context.Context, doc *internal.Document) (success string, 
 	return "Pass", nil
 }
 
-func (s *Set) Remove(ctx context.Context, title string) (error) {
+func (s *Set) Remove(ctx context.Context, title string) error {
 	resp, err := s.RemoveEndpoint(ctx, RemoveRequest{Title: title})
 	if err != nil {
 		return err

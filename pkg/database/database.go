@@ -12,12 +12,12 @@ import (
 	"github.com/ethancox127/WatermarkService/internal"
 )
 
-type databaseService struct{
+type databaseService struct {
 	ctx context.Context
-	db *sqlx.DB
+	db  *sqlx.DB
 }
 
-func NewService(ctx context.Context, db *sqlx.DB) Service { 
+func NewService(ctx context.Context, db *sqlx.DB) Service {
 	return &databaseService{ctx: ctx, db: db}
 }
 
@@ -74,6 +74,7 @@ func receiveDocs(rows *sqlx.Rows) ([]internal.Document, error) {
 func (d *databaseService) Get(filters ...internal.Filter) ([]internal.Document, error) {
 	fmt.Println("Getting records")
 	log.Println("Getting records")
+	fmt.Println(filters)
 
 	err := testConnection(d.db)
 	if err != nil {
@@ -81,6 +82,7 @@ func (d *databaseService) Get(filters ...internal.Filter) ([]internal.Document, 
 	}
 
 	query := buildQuery(filters...)
+	fmt.Println(query)
 
 	rows, err := d.db.Queryx(query)
 	if err != nil {

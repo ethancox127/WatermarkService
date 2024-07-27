@@ -1,14 +1,14 @@
 package db_transport
 
 import (
-	"fmt"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/ethancox127/WatermarkService/pkg/database/db_endpoints"
 	"github.com/ethancox127/WatermarkService/internal/util"
+	"github.com/ethancox127/WatermarkService/pkg/database/db_endpoints"
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -49,12 +49,18 @@ func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, erro
 	fmt.Println("Get request")
 	var req db_endpoints.GetRequest
 	fmt.Println(r.Body)
+	if r.ContentLength == 0 {
+		logger.Log("Get all documents")
+		return req, nil
+	}
+
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	fmt.Println("Request built properly")
+	fmt.Println(req)
 	return req, nil
 }
 
@@ -91,6 +97,7 @@ func decodeHTTPServiceStatusRequest(_ context.Context, _ *http.Request) (interfa
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	fmt.Println("encode response")
 	if e, ok := response.(error); ok && e != nil {
 		encodeError(ctx, e, w)
 		return nil
