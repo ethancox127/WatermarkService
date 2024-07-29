@@ -12,8 +12,8 @@
 #  https://github.com/grpc/grpc-go/tree/master/examples
 
 REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
-PB_PATH="${REPO_ROOT}/api/v1/pb"
-PROTO_FILE=${1:-"watermarksvc.proto"}
+PB_PATH="${REPO_ROOT}/api/v1/pb/database"
+PROTO_FILE=${1:-"databasesvc.proto"}
 
 
 echo "Generating pb files for ${PROTO_FILE} service"

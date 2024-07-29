@@ -2,7 +2,7 @@
 package internal
 
 type Document struct {
-	Id		  int	 
+	Id		  int	 `json:"id"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
 	Author    string `json:"author"`

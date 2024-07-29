@@ -46,22 +46,22 @@ func MakeGetEndpoint(svc database.Service) endpoint.Endpoint {
 func MakeUpdateEndpoint(svc database.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(UpdateRequest)
-		err := svc.Update(req.Title, req.Document)
+		err := svc.Update(req.Title, &req.Document)
 		if err != nil {
-			return UpdateResponse{err}, nil
+			return UpdateResponse{err.Error()}, nil
 		}
-		return UpdateResponse{nil}, nil
+		return UpdateResponse{""}, nil
 	}
 }
 
 func MakeAddEndpoint(svc database.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(AddRequest)
-		success, err := svc.Add(req.Document)
+		err := svc.Add(&req.Document)
 		if err != nil {
-			return AddResponse{success, err}, nil
+			return AddResponse{err.Error()}, nil
 		}
-		return AddResponse{success, nil}, nil
+		return AddResponse{""}, nil
 	}
 }
 
@@ -70,9 +70,9 @@ func MakeRemoveEndpoint(svc database.Service) endpoint.Endpoint {
 		req := request.(RemoveRequest)
 		err := svc.Remove(req.Title)
 		if err != nil {
-			return RemoveResponse{err}, nil
+			return RemoveResponse{err.Error()}, nil
 		}
-		return RemoveResponse{nil}, nil
+		return RemoveResponse{""}, nil
 	}
 }
 
@@ -100,26 +100,26 @@ func (s *Set) Get(ctx context.Context, filters ...internal.Filter) ([]internal.D
 	return getResp.Documents, nil
 }
 
-func (s *Set) Update(ctx context.Context, title string, doc *internal.Document) error {
+func (s *Set) Update(ctx context.Context, title string, doc internal.Document) error {
 	resp, err := s.UpdateEndpoint(ctx, UpdateRequest{Title: title, Document: doc})
 	if err != nil {
 		return err
 	}
 	updateResp := resp.(UpdateResponse)
-	if updateResp.Err != nil {
-		return updateResp.Err
+	if updateResp.Err != "" {
+		return errors.New(updateResp.Err)
 	}
 	return nil
 }
 
-func (s *Set) Add(ctx context.Context, doc *internal.Document) (success string, err error) {
+func (s *Set) Add(ctx context.Context, doc internal.Document) (success string, err error) {
 	resp, err := s.AddEndpoint(ctx, AddRequest{Document: doc})
 	if err != nil {
 		return "Fail", err
 	}
 	addResp := resp.(AddResponse)
-	if addResp.Err != nil {
-		return "Fail", addResp.Err
+	if addResp.Err != "" {
+		return "Fail", errors.New(addResp.Err)
 	}
 	return "Pass", nil
 }
@@ -130,8 +130,8 @@ func (s *Set) Remove(ctx context.Context, title string) error {
 		return err
 	}
 	removeResp := resp.(RemoveResponse)
-	if removeResp.Err != nil {
-		return removeResp.Err
+	if removeResp.Err != "" {
+		return errors.New(removeResp.Err)
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"io/ioutil"
 
 	"github.com/ethancox127/WatermarkService/internal/util"
 	"github.com/ethancox127/WatermarkService/pkg/database/db_endpoints"
@@ -48,7 +49,6 @@ func NewHTTPHandler(ep db_endpoints.Set) http.Handler {
 func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	fmt.Println("Get request")
 	var req db_endpoints.GetRequest
-	fmt.Println(r.Body)
 	if r.ContentLength == 0 {
 		logger.Log("Get all documents")
 		return req, nil
@@ -65,29 +65,52 @@ func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, erro
 }
 
 func decodeHTTPUpdateRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	fmt.Println("Update request")
+	bytedata, err := ioutil.ReadAll(r.Body)
+	reqBodyString := string(bytedata)
+	fmt.Println(reqBodyString)
 	var req db_endpoints.UpdateRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
+	/*err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		return nil, err
+	}*/
+	err = json.Unmarshal(bytedata, &req)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
 	}
+	fmt.Println("Request built properly")
+	fmt.Println(req)
 	return req, nil
 }
 
 func decodeHTTPAddRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	fmt.Println("Add request")
 	var req db_endpoints.AddRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
+	/*err = json.Unmarshal(bytedata, &req)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}*/
+	fmt.Println("Request built properly")
+	fmt.Println(req)
 	return req, nil
 }
 
 func decodeHTTPRemoveRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	fmt.Println("Remove request")
 	var req db_endpoints.RemoveRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Request built properly")
+	fmt.Println(req)
 	return req, nil
 }
 

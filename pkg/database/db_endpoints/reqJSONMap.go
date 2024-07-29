@@ -13,20 +13,19 @@ type GetResponse struct {
 
 type UpdateRequest struct {
 	Title	  string			  `json:"title"`
-	Document  *internal.Document   `json:"documents"`
+	Document  internal.Document   `json:"documents"`
 }
 
 type UpdateResponse struct {
-	Err       error              `json:"err,omitempty"`
+	Err       string              `json:"err,omitempty"`
 }
 
 type AddRequest struct {
-	Document  *internal.Document   `json:"documents"`
+	Document  internal.Document   `json:"document"`
 }
 
 type AddResponse struct {
-	Success   string			  `json:"success"`
-	Err		  error				  `json:"err,omitempty"`
+	Err		  string				  `json:"err,omitempty"`
 }
 
 type RemoveRequest struct {
@@ -34,7 +33,7 @@ type RemoveRequest struct {
 }
 
 type RemoveResponse struct {
-	Err		  error				  `json:"err,omitempty"`
+	Err		  string				  `json:"err,omitempty"`
 }
 
 type ServiceStatusRequest struct{}

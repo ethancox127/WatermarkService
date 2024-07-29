@@ -112,18 +112,22 @@ func (d *databaseService) Update(title string, doc *internal.Document) error {
 	return nil
 }
 
-func (d *databaseService) Add(doc *internal.Document) (string, error) {
+func (d *databaseService) Add(doc *internal.Document) (error) {
+	fmt.Println("Adding record")
+	fmt.Println(doc)
+	fmt.Println("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
 	err := testConnection(d.db)
 	if err != nil {
-		return "", err
+		return err
 	}
 
+	fmt.Println("Executing query")
 	_, err = d.db.Queryx("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return "Success", nil
+	return nil
 }
 
 func (d *databaseService) Remove(title string) error {
