@@ -2,26 +2,27 @@ syntax = "proto3";
 
 package pb;
 
-option go_package = "./pb";
+option go_package = ".";
 
 service Database {
-    rpc Get (GetRequest) returns (GetReply) {}
+    rpc Get (GetRequest) returns (GetResponse) {}
 
-    rpc Update (UpdateRequest) returns (UpdateReply) {}
+    rpc Update (UpdateRequest) returns (UpdateResponse) {}
 
-    rpc Add (AddRequest) returns (AddReply) {}
+    rpc Add (AddRequest) returns (AddResponse) {}
 
-    rpc Remove (RemoveRequest) returns (RemoveReply) {}
+    rpc Remove (RemoveRequest) returns (RemoveResponse) {}
 
-    rpc ServiceStatus (ServiceStatusRequest) returns (ServiceStatusReply) {}
+    rpc ServiceStatus (ServiceStatusRequest) returns (ServiceStatusResponse) {}
 }
 
 message Document {
-    string content = 1;
-    string title = 2;
-    string author = 3;
-    string topic = 4;
-    string watermark = 5;
+    int32 Id = 1;
+    string content = 2;
+    string title = 3;
+    string author = 4;
+    string topic = 5;
+    string watermark = 6;
 }
 
 message GetRequest {
@@ -32,7 +33,7 @@ message GetRequest {
     repeated Filters filters = 1;
 }
 
-message GetReply {
+message GetResponse {
     repeated Document documents = 1;
     string Err = 2;
 }
@@ -42,7 +43,7 @@ message UpdateRequest {
     Document document = 2;
 }
 
-message UpdateReply {
+message UpdateResponse {
     string err = 1;
 }
 
@@ -50,7 +51,7 @@ message AddRequest {
     Document document = 1;
 }
 
-message AddReply {
+message AddResponse {
     string err = 1;
 }
 
@@ -58,13 +59,13 @@ message RemoveRequest {
     string title = 1;
 }
 
-message RemoveReply {
+message RemoveResponse {
     string err = 1;
 }
 
 message ServiceStatusRequest {}
 
-message ServiceStatusReply {
+message ServiceStatusResponse {
     int64 code = 1;
     string err = 2;
 }

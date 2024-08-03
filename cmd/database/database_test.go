@@ -28,34 +28,34 @@ func TestDBConnection(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	dbService := database.NewService()
+	dbService := database.NewService(ctx, db)
 	doc := internal.Document{Id: -1, Title: "Test", Content: "Test", Author: "Test", Topic: "Test", Watermark: "test"}
-	_, err := dbService.Add(ctx, db, &doc)
+	err := dbService.Add(&doc)
 	require.Equal(t, err, nil, "Error truncating Event Log")
 }
 
 func TestGet(t *testing.T) {
 	filter := internal.Filter{Key: "title", Value: "Mary Had a Little Lamb"}
-	dbService := database.NewService()
-	docs, err := dbService.Get(ctx, db, filter)
+	dbService := database.NewService(ctx, db)
+	docs, err := dbService.Get(filter)
 	require.Equal(t, err, nil, "Error truncating Event Log")
 	fmt.Println(docs)
 
 	filter = internal.Filter{Key: "title"}
-	docs, err = dbService.Get(ctx, db, filter)
+	docs, err = dbService.Get(filter)
 	require.Equal(t, err, nil, "Error truncating Event Log")
 	fmt.Println(docs)
 }
 
 func TestUpdate(t *testing.T) {
-	dbService := database.NewService()
+	dbService := database.NewService(ctx, db)
 	doc := internal.Document{Id: -1, Title: "Test", Content: "Test", Author: "False", Topic: "Test", Watermark: "test"}
-	err := dbService.Update(ctx, db, "Test", &doc)
+	err := dbService.Update("Test", &doc)
 	require.Equal(t, err, nil, "Error truncating Event Log")
 }
 
 func TestDelete(t *testing.T) {
-	dbService := database.NewService()
-	err := dbService.Remove(ctx, db, "Test")
+	dbService := database.NewService(ctx, db)
+	err := dbService.Remove("Test")
 	require.Equal(t, err, nil, "Error truncating Event Log")
 }
