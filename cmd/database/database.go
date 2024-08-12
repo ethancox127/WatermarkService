@@ -50,7 +50,7 @@ func main() {
 		service     = database.NewService(ctx, db)
 		eps         = db_endpoints.NewEndpointSet(service)
 		httpHandler = db_transport.NewHTTPHandler(eps)
-		grpcServer  = db_transport.NewGRPCServer(eps)
+		grpcServer  = db_transport.NewGRPCServer(service)
 	)
 
 	var g group.Group

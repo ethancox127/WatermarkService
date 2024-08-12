@@ -5,15 +5,15 @@ package pb;
 option go_package = ".";
 
 service Database {
-    rpc Get (GetRequest) returns (GetResponse) {}
+    rpc Get (GetRequest) returns (GetReply) {}
 
-    rpc Update (UpdateRequest) returns (UpdateResponse) {}
+    rpc Update (UpdateRequest) returns (UpdateReply) {}
 
-    rpc Add (AddRequest) returns (AddResponse) {}
+    rpc Add (AddRequest) returns (AddReply) {}
 
-    rpc Remove (RemoveRequest) returns (RemoveResponse) {}
+    rpc Remove (RemoveRequest) returns (RemoveReply) {}
 
-    rpc ServiceStatus (ServiceStatusRequest) returns (ServiceStatusResponse) {}
+    rpc ServiceStatus (ServiceStatusRequest) returns (ServiceStatusReply) {}
 }
 
 message Document {
@@ -33,7 +33,7 @@ message GetRequest {
     repeated Filters filters = 1;
 }
 
-message GetResponse {
+message GetReply {
     repeated Document documents = 1;
     string Err = 2;
 }
@@ -43,7 +43,7 @@ message UpdateRequest {
     Document document = 2;
 }
 
-message UpdateResponse {
+message UpdateReply {
     string err = 1;
 }
 
@@ -51,7 +51,7 @@ message AddRequest {
     Document document = 1;
 }
 
-message AddResponse {
+message AddReply {
     string err = 1;
 }
 
@@ -59,13 +59,13 @@ message RemoveRequest {
     string title = 1;
 }
 
-message RemoveResponse {
+message RemoveReply {
     string err = 1;
 }
 
 message ServiceStatusRequest {}
 
-message ServiceStatusResponse {
+message ServiceStatusReply {
     int64 code = 1;
     string err = 2;
 }
