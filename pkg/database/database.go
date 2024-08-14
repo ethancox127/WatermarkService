@@ -104,7 +104,7 @@ func (d *databaseService) Update(title string, doc *internal.Document) error {
 		return err
 	}
 
-	_, err = d.db.Queryx("UPDATE books SET content = " + `'` + doc.Content + `'` + ", author = " + `'` + doc.Author + `'` + ", topic = " + `'` + doc.Topic + `'` + ", watermark = true WHERE title = " + `'` + doc.Title + `'`)
+	_, err = d.db.Queryx("UPDATE books SET content = " + `'` + doc.Content + `'` + ", author = " + `'` + doc.Author + `'` + ", topic = " + `'` + doc.Topic + `'` + ", watermark = " + `'` + doc.Watermark + `'` + " WHERE title = " + `'` + title + `'`)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (d *databaseService) Update(title string, doc *internal.Document) error {
 	return nil
 }
 
-func (d *databaseService) Add(doc *internal.Document) (error) {
+func (d *databaseService) Add(doc *internal.Document) error {
 	fmt.Println("Adding record")
 	fmt.Println(doc)
 	fmt.Println("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
@@ -122,7 +122,7 @@ func (d *databaseService) Add(doc *internal.Document) (error) {
 	}
 
 	fmt.Println("Executing query")
-	_, err = d.db.Queryx("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + "true" + ")")
+	_, err = d.db.Queryx("INSERT INTO books(id, title, content, author, topic, watermark) VALUES (" + "DEFAULT, " + `'` + doc.Title + `'` + ", " + `'` + doc.Content + `'` + ", " + `'` + doc.Author + `'` + ", " + `'` + doc.Topic + `'` + ", " + `'` + doc.Watermark + `'` + ")")
 	if err != nil {
 		return err
 	}
