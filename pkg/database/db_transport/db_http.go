@@ -14,36 +14,51 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
-func NewHTTPHandler(ep db_endpoints.Set) http.Handler {
-	m := http.NewServeMux()
+func NewHTTPHandler(svc database.Service) http.Handler {
+	httpsrv := newHttpServer()
+	if httpsrv == nil {
+		return nil
+	}
 
-	m.Handle("/healthz", httptransport.NewServer(
-		ep.ServiceStatusEndpoint,
-		decodeHTTPServiceStatusRequest,
-		encodeResponse,
-	))
-	m.Handle("/get", httptransport.NewServer(
-		ep.GetEndpoint,
-		decodeHTTPGetRequest,
-		encodeResponse,
-	))
-	m.Handle("/add", httptransport.NewServer(
-		ep.AddEndpoint,
-		decodeHTTPAddRequest,
-		encodeResponse,
-	))
-	m.Handle("/update", httptransport.NewServer(
-		ep.UpdateEndpoint,
-		decodeHTTPUpdateRequest,
-		encodeResponse,
-	))
-	m.Handle("/remove", httptransport.NewServer(
-		ep.RemoveEndpoint,
-		decodeHTTPRemoveRequest,
-		encodeResponse,
-	))
+	m := http.NewServeMux()
+	m.HandleFunc("/healthz", )
+	m.HandleFunc("/get", )
+	m.HandleFunc("/add", )
+	m.HandleFunc("/update", )
+	m.HandleFunc("/remove", )
 
 	return m
+}
+
+type httpServer struct {
+	svc database.Service
+}
+
+func newHttpServer(svc database.Server) *httpServer {
+	return &httpServer{
+		svc: svc,
+	}
+}
+
+func (s *httpServer) Get(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPGetRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	docs, err := svc.Get(req.Filters...)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := db_endpoints.GetResponse{Documents: docs, err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -119,7 +134,7 @@ func decodeHTTPServiceStatusRequest(_ context.Context, _ *http.Request) (interfa
 	return req, nil
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeResponse(w http.ResponseWriter, response interface{}) error {
 	fmt.Println("encode response")
 	if e, ok := response.(error); ok && e != nil {
 		encodeError(ctx, e, w)
@@ -128,7 +143,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	return json.NewEncoder(w).Encode(&response)
 }
 
-func encodeError(ctx context.Context, e error, w http.ResponseWriter) {
+func encodeError(e error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	switch e {
 	case util.ErrUnknown:
