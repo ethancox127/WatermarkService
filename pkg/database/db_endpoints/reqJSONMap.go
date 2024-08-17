@@ -3,7 +3,7 @@ package db_endpoints
 import "github.com/ethancox127/WatermarkService/internal"
 
 type GetRequest struct {
-	Filters   []internal.Filter `json:"filters,omitempty"`
+	Filters []internal.Filter `json:"filters,omitempty"`
 }
 
 type GetResponse struct {
@@ -12,28 +12,28 @@ type GetResponse struct {
 }
 
 type UpdateRequest struct {
-	Title	  string			  `json:"title"`
-	Document  internal.Document   `json:"documents"`
+	Title    string            `json:"title"`
+	Document internal.Document `json:"documents"`
 }
 
 type UpdateResponse struct {
-	Err       string              `json:"err,omitempty"`
+	Err string `json:"err,omitempty"`
 }
 
 type AddRequest struct {
-	Document  internal.Document   `json:"document"`
+	Document internal.Document `json:"document"`
 }
 
 type AddResponse struct {
-	Err		  string				  `json:"err,omitempty"`
+	Err string `json:"err,omitempty"`
 }
 
 type RemoveRequest struct {
-	Title	  string			  `json:"title"`
+	Title string `json:"title"`
 }
 
 type RemoveResponse struct {
-	Err		  string				  `json:"err,omitempty"`
+	Err string `json:"err,omitempty"`
 }
 
 type ServiceStatusRequest struct{}

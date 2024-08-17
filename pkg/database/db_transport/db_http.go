@@ -1,31 +1,27 @@
 package db_transport
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"os"
-	"io/ioutil"
 
-	"github.com/ethancox127/WatermarkService/internal/util"
+	"github.com/ethancox127/WatermarkService/pkg/database"
 	"github.com/ethancox127/WatermarkService/pkg/database/db_endpoints"
-	"github.com/go-kit/kit/log"
-	httptransport "github.com/go-kit/kit/transport/http"
 )
 
 func NewHTTPHandler(svc database.Service) http.Handler {
-	httpsrv := newHttpServer()
+	httpsrv := newHttpServer(svc)
 	if httpsrv == nil {
 		return nil
 	}
 
 	m := http.NewServeMux()
-	m.HandleFunc("/healthz", )
-	m.HandleFunc("/get", )
-	m.HandleFunc("/add", )
-	m.HandleFunc("/update", )
-	m.HandleFunc("/remove", )
+	m.HandleFunc("/healthz", httpsrv.ServiceStatus)
+	m.HandleFunc("/get", httpsrv.Get)
+	m.HandleFunc("/add", httpsrv.Add)
+	m.HandleFunc("/update", httpsrv.Update)
+	m.HandleFunc("/remove", httpsrv.Remove)
 
 	return m
 }
@@ -34,7 +30,7 @@ type httpServer struct {
 	svc database.Service
 }
 
-func newHttpServer(svc database.Server) *httpServer {
+func newHttpServer(svc database.Service) *httpServer {
 	return &httpServer{
 		svc: svc,
 	}
@@ -47,13 +43,13 @@ func (s *httpServer) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	docs, err := svc.Get(req.Filters...)
+	docs, err := s.svc.Get(req.Filters...)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res := db_endpoints.GetResponse{Documents: docs, err: ""}
+	res := db_endpoints.GetResponse{Documents: docs, Err: ""}
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -61,106 +57,147 @@ func (s *httpServer) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func (s *httpServer) Update(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPUpdateRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = s.svc.Update(req.Title, &req.Document)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := db_endpoints.UpdateResponse{Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) Add(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPAddRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = s.svc.Add(&req.Document)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := db_endpoints.AddResponse{Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) Remove(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPRemoveRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = s.svc.Remove(req.Title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := db_endpoints.RemoveResponse{Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) ServiceStatus(w http.ResponseWriter, r *http.Request) {
+	_, err := decodeHTTPServiceStatusRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	code, err := s.svc.ServiceStatus()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := db_endpoints.ServiceStatusResponse{Code: code, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func decodeHTTPGetRequest(r *http.Request) (db_endpoints.GetRequest, error) {
 	fmt.Println("Get request")
 	var req db_endpoints.GetRequest
 	if r.ContentLength == 0 {
-		logger.Log("Get all documents")
+		log.Println("Get all documents")
 		return req, nil
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		fmt.Println(err)
-		return nil, err
+		return req, err
 	}
 	fmt.Println("Request built properly")
 	fmt.Println(req)
 	return req, nil
 }
 
-func decodeHTTPUpdateRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPUpdateRequest(r *http.Request) (db_endpoints.UpdateRequest, error) {
 	fmt.Println("Update request")
-	bytedata, err := ioutil.ReadAll(r.Body)
-	reqBodyString := string(bytedata)
-	fmt.Println(reqBodyString)
 	var req db_endpoints.UpdateRequest
-	/*err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		return nil, err
-	}*/
-	err = json.Unmarshal(bytedata, &req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		fmt.Println(err)
-		return nil, err
+		return req, err
 	}
 	fmt.Println("Request built properly")
 	fmt.Println(req)
 	return req, nil
 }
 
-func decodeHTTPAddRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPAddRequest(r *http.Request) (db_endpoints.AddRequest, error) {
 	fmt.Println("Add request")
 	var req db_endpoints.AddRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		fmt.Println(err)
-		return nil, err
+		return req, err
 	}
-	/*err = json.Unmarshal(bytedata, &req)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}*/
 	fmt.Println("Request built properly")
 	fmt.Println(req)
 	return req, nil
 }
 
-func decodeHTTPRemoveRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPRemoveRequest(r *http.Request) (db_endpoints.RemoveRequest, error) {
 	fmt.Println("Remove request")
 	var req db_endpoints.RemoveRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 	fmt.Println("Request built properly")
 	fmt.Println(req)
 	return req, nil
 }
 
-func decodeHTTPServiceStatusRequest(_ context.Context, _ *http.Request) (interface{}, error) {
+func decodeHTTPServiceStatusRequest(_ *http.Request) (db_endpoints.ServiceStatusRequest, error) {
 	var req db_endpoints.ServiceStatusRequest
 	return req, nil
-}
-
-func encodeResponse(w http.ResponseWriter, response interface{}) error {
-	fmt.Println("encode response")
-	if e, ok := response.(error); ok && e != nil {
-		encodeError(ctx, e, w)
-		return nil
-	}
-	return json.NewEncoder(w).Encode(&response)
-}
-
-func encodeError(e error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	switch e {
-	case util.ErrUnknown:
-		w.WriteHeader(http.StatusNotFound)
-	case util.ErrInvalidArgument:
-		w.WriteHeader(http.StatusBadRequest)
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": e.Error(),
-	})
-}
-
-var logger log.Logger
-
-func init() {
-	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 }

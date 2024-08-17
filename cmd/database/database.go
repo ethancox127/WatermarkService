@@ -12,7 +12,6 @@ import (
 	pb "github.com/ethancox127/WatermarkService/api/v1/pb/database"
 	"github.com/ethancox127/WatermarkService/internal/db_utils"
 	"github.com/ethancox127/WatermarkService/pkg/database"
-	"github.com/ethancox127/WatermarkService/pkg/database/db_endpoints"
 	"github.com/ethancox127/WatermarkService/pkg/database/db_transport"
 
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -48,8 +47,7 @@ func main() {
 
 	var (
 		service     = database.NewService(ctx, db)
-		eps         = db_endpoints.NewEndpointSet(service)
-		httpHandler = db_transport.NewHTTPHandler(eps)
+		httpHandler = db_transport.NewHTTPHandler(service)
 		grpcServer  = db_transport.NewGRPCServer(service)
 	)
 

@@ -1,120 +1,186 @@
 package transport
 
 import (
-	"context"
 	"encoding/json"
+	"log"
 	"net/http"
-	"os"
 
+	"github.com/ethancox127/WatermarkService/pkg/watermark"
 	"github.com/ethancox127/WatermarkService/pkg/watermark/endpoints"
-	"github.com/ethancox127/WatermarkService/internal/util"
-	"github.com/go-kit/kit/log"
-	httptransport "github.com/go-kit/kit/transport/http"
 )
 
-func NewHTTPHandler(ep endpoints.Set) http.Handler {
-	m := http.NewServeMux()
+func NewHTTPHandler(svc watermark.Service) http.Handler {
+	httpsrv := newHttpServer(svc)
+	if httpsrv == nil {
+		return nil
+	}
 
-	m.Handle("/healthz", httptransport.NewServer(
-		ep.ServiceStatusEndpoint,
-		decodeHTTPServiceStatusRequest,
-		encodeResponse,
-	))
-	m.Handle("/status", httptransport.NewServer(
-		ep.StatusEndpoint,
-		decodeHTTPStatusRequest,
-		encodeResponse,
-	))
-	m.Handle("/adddocument", httptransport.NewServer(
-		ep.AddDocumentEndpoint,
-		decodeHTTPAddDocumentRequest,
-		encodeResponse,
-	))
-	m.Handle("/get", httptransport.NewServer(
-		ep.GetEndpoint,
-		decodeHTTPGetRequest,
-		encodeResponse,
-	))
-	m.Handle("/watermark", httptransport.NewServer(
-		ep.WatermarkEndpoint,
-		decodeHTTPWatermarkRequest,
-		encodeResponse,
-	))
+	m := http.NewServeMux()
+	m.HandleFunc("/healthz", httpsrv.ServiceStatus)
+	m.HandleFunc("/get", httpsrv.Get)
+	m.HandleFunc("/addDocument", httpsrv.AddDocument)
+	m.HandleFunc("/watermark", httpsrv.Watermark)
+	m.HandleFunc("/status", httpsrv.Status)
 
 	return m
 }
 
-func decodeHTTPGetRequest(_ context.Context, r *http.Request) (interface{}, error) {
+type httpServer struct {
+	svc watermark.Service
+}
+
+func newHttpServer(svc watermark.Service) *httpServer {
+	return &httpServer{
+		svc: svc,
+	}
+}
+
+func (s *httpServer) Get(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPGetRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	docs, err := s.svc.Get(req.Filters...)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := endpoints.GetResponse{Documents: docs, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) Watermark(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPWatermarkRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	code, err := s.svc.Watermark(req.TicketID, req.Mark)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := endpoints.WatermarkResponse{Code: code, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) AddDocument(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPAddDocumentRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ticket, err := s.svc.AddDocument(req.Document)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := endpoints.AddDocumentResponse{TicketID: ticket, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) Status(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeHTTPStatusRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	status, err := s.svc.Status(req.TicketID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := endpoints.StatusResponse{Status: status, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *httpServer) ServiceStatus(w http.ResponseWriter, r *http.Request) {
+	_, err := decodeHTTPServiceStatusRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	code, err := s.svc.ServiceStatus()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := endpoints.ServiceStatusResponse{Code: code, Err: ""}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func decodeHTTPGetRequest(r *http.Request) (endpoints.GetRequest, error) {
 	var req endpoints.GetRequest
 	if r.ContentLength == 0 {
-		logger.Log("Get request with no body")
+		log.Println("Get request with no body")
 		return req, nil
 	}
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 	return req, nil
 }
 
-func decodeHTTPStatusRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPStatusRequest(r *http.Request) (endpoints.StatusRequest, error) {
 	var req endpoints.StatusRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 	return req, nil
 }
 
-func decodeHTTPWatermarkRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPWatermarkRequest(r *http.Request) (endpoints.WatermarkRequest, error) {
 	var req endpoints.WatermarkRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 	return req, nil
 }
 
-func decodeHTTPAddDocumentRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func decodeHTTPAddDocumentRequest(r *http.Request) (endpoints.AddDocumentRequest, error) {
 	var req endpoints.AddDocumentRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 	return req, nil
 }
 
-func decodeHTTPServiceStatusRequest(_ context.Context, _ *http.Request) (interface{}, error) {
+func decodeHTTPServiceStatusRequest(_ *http.Request) (endpoints.ServiceStatusRequest, error) {
 	var req endpoints.ServiceStatusRequest
 	return req, nil
-}
-
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(error); ok && e != nil {
-		encodeError(ctx, e, w)
-		return nil
-	}
-	return json.NewEncoder(w).Encode(&response)
-}
-
-func encodeError(ctx context.Context, e error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	switch e {
-	case util.ErrUnknown:
-		w.WriteHeader(http.StatusNotFound)
-	case util.ErrInvalidArgument:
-		w.WriteHeader(http.StatusBadRequest)
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": e.Error(),
-	})
-}
-
-var logger log.Logger
-
-func init() {
-	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 }
