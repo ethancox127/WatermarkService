@@ -7,11 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"context"
 
 	pb "github.com/ethancox127/WatermarkService/api/v1/pb/watermark"
 	"github.com/ethancox127/WatermarkService/pkg/watermark"
-	"github.com/ethancox127/WatermarkService/pkg/watermark/endpoints"
 	"github.com/ethancox127/WatermarkService/pkg/watermark/transport"
+	"github.com/ethancox127/WatermarkService/internal/db_utils"
 
 	"github.com/go-kit/kit/log"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
@@ -34,11 +35,20 @@ func main() {
 	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 
+	db, err := db_utils.ConnectDB()
+	if err != nil {
+		logger.Log(err)
+		return
+	}
+
+	fmt.Println("db is connected")
+
+	ctx := context.TODO()
+
 	var (
-		service     = watermark.NewService()
-		eps         = endpoints.NewEndpointSet(service)
-		httpHandler = transport.NewHTTPHandler(eps)
-		grpcServer  = transport.NewGRPCServer(eps)
+		service     = watermark.NewService(ctx, db)
+		httpHandler = transport.NewHTTPHandler(service)
+		grpcServer  = transport.NewGRPCServer(service)
 	)
 
 	var g group.Group
